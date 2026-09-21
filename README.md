@@ -1,6 +1,6 @@
 # Hackathon Team Lead
 
-Repository for a lightweight technical-lead agent workflow and interactive local demo.
+Repository for a lightweight technical-lead agent workflow, with both a Codex/AGENTS.md workflow and a live local web agent.
 
 ## What this demonstrates
 
@@ -8,21 +8,33 @@ A Hackathon Tech Lead agent turns a small request into a scoped plan, waits for 
 
 ## Status
 
-The workflow, specification, and local interactive demo are complete.
+The workflow, specification, and a live local web agent are complete. The web agent reads the real repository, calls a real LLM (Anthropic Claude or Google Gemini) to plan and implement changes, and runs real checks — it is not a scripted simulation.
 
 ## Workflow
 
 Analyze task → propose plan → receive approval → implement → verify → report.
 
-## Run locally with UI
+## Run the live web agent
 
-No installation is needed.
+Requirements: Python 3.9+ and either an [Anthropic API key](https://console.anthropic.com/) or a [Google Gemini API key](https://aistudio.google.com/apikey). No other packages are installed — the server uses only the Python standard library.
 
-1. Open [index.html](index.html) in a browser by double-clicking it, or use VS Code's **Open with Live Server**.
-2. Enter a task and select **Generate plan**.
-3. Select **Approve plan**, then **Complete task** to view the report.
+1. Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY=your-key` **or** `GEMINI_API_KEY=your-key` (only one is required; if both are set, Anthropic is used unless `AI_PROVIDER=gemini` is set). `.env` is gitignored and the key is never sent to the browser or logged.
+2. Start the server: `python server.py` (serves the UI and API at `http://127.0.0.1:8000`).
+3. Open `http://127.0.0.1:8000` in a browser (opening `index.html` directly will not work — the UI needs the API).
+4. Review the real project map or search for a file; enter a task goal and constraints.
+5. Select **Составить план** — the configured model reads the real file list and returns a plan (relevant files, steps, verification, risks).
+6. Select **Согласовать план**, pick the file to edit (from the plan's relevant files) and one or more checks, then select **Применить и завершить**.
+7. The agent asks the model to rewrite the chosen file, writes the result to disk, runs real checks (scope, secret-scan, Markdown lint/link check), and shows the actual diff and report.
 
-The UI is an offline demonstration; it does not call an AI model, edit files, or execute commands.
+Without an AI key configured, the server still serves the real project map and search, but plan/apply endpoints return a clear error instead of a fabricated result — the agent never claims to have done work it didn't do.
+
+Safety guardrails enforced server-side: edits are restricted to the plan's relevant files, sensitive filenames (`.env`, `*secret*`, `*credential*`, `*token*`, `*password*`, `.pem`, `.key`) can never be selected as an edit target, and any AI output that looks like a real secret or token blocks the write.
+
+## Troubleshooting
+
+- **Port 8000 already in use**: If starting `python server.py` fails because port 8000 is occupied, set a different port via the `PORT` environment variable (e.g. `PORT=8001 python server.py` or `PORT=8001` in `.env`), or stop the process using port 8000.
+- **UI API error / `index.html` opened directly**: Opening `index.html` directly in the browser as a file will fail because the UI relies on API endpoints. Run `python server.py` and open `http://127.0.0.1:8000`.
+- **Missing API key**: If plan or apply actions fail, ensure `ANTHROPIC_API_KEY` or `GEMINI_API_KEY` is properly configured in `.env`.
 
 ## Run the Codex workflow
 
@@ -54,6 +66,9 @@ Approved. Implement the plan, run checks, and report changed files, results, and
 - [Agent specification](docs/agent-spec.md)
 - [Agent review checklist](docs/agent-checklist.md)
 - [Demo scenario](docs/demo-scenario.md)
+- [Live agent server](server.py)
+- [Live agent UI](index.html)
+- [Completed live-agent example run](docs/live-agent-example-report.md)
 
 ## Spec Kit
 
@@ -61,3 +76,5 @@ Approved. Implement the plan, run checks, and report changed files, results, and
 - [Implementation plan](specs/001-hackathon-tech-lead/plan.md)
 - [Task list](specs/001-hackathon-tech-lead/tasks.md)
 - [Local UI specification](specs/002-local-ui/spec.md)
+- [Agent capability demo](specs/003-agent-capabilities/spec.md)
+- [Live agent (real AI) specification](specs/004-live-agent/spec.md)

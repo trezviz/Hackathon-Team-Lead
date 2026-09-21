@@ -1,116 +1,80 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Local Hackathon Tech Lead workflow demo" />
+    <meta name="description" content="Живой агент Hackathon Tech Lead: реальные файлы, реальные ответы ИИ, реальные проверки" />
     <title>Hackathon Tech Lead</title>
     <link rel="stylesheet" href="assets/styles.css" />
   </head>
   <body>
     <main class="app-shell">
       <header class="hero">
-        <p class="eyebrow">LOCAL WORKFLOW DEMO</p>
+        <p class="eyebrow">LIVE AGENT</p>
         <h1>Hackathon <span>Tech Lead</span></h1>
-        <p class="hero-copy">Turn a technical request into a scoped plan, an approved change, and an honest verification report.</p>
-        <p class="demo-note">Demo mode — no files are changed and no commands are executed.</p>
+        <p class="hero-copy">Workflow: карта проекта → цель и ограничения → план (Claude) → согласование → правка файла и проверки → отчёт.</p>
+        <p class="demo-note" id="aiStatusBanner">Проверка подключения к ИИ…</p>
       </header>
-
-      <section class="progress" aria-label="Workflow progress">
-        <div class="step is-active" data-step="draft"><span>1</span>Task</div>
-        <div class="connector"></div>
-        <div class="step" data-step="planned"><span>2</span>Plan</div>
-        <div class="connector"></div>
-        <div class="step" data-step="approved"><span>3</span>Approval</div>
-        <div class="connector"></div>
-        <div class="step" data-step="completed"><span>4</span>Report</div>
+      <section class="progress" aria-label="Прогресс workflow">
+        <div class="step is-active" data-step="draft"><span>1</span>Контекст</div><div class="connector"></div>
+        <div class="step" data-step="planned"><span>2</span>План</div><div class="connector"></div>
+        <div class="step" data-step="approved"><span>3</span>Проверки</div><div class="connector"></div>
+        <div class="step" data-step="completed"><span>4</span>Отчёт</div>
       </section>
-
-      <section class="workspace" aria-label="Workflow workspace">
+      <p class="error-banner hidden" id="errorBanner" role="alert" aria-live="assertive"></p>
+      <section class="workspace" aria-label="Рабочая область агента">
         <article class="panel intake-panel">
-          <div class="panel-heading">
-            <div>
-              <p class="panel-kicker">01 / TASK INTAKE</p>
-              <h2>What needs to change?</h2>
-            </div>
-            <span class="status-pill" id="stateLabel">Draft</span>
-          </div>
-
-          <label for="taskInput">Technical task</label>
-          <textarea id="taskInput" rows="7" placeholder="Example: Add a short setup section to README.md.">Add a short setup section to README.md.</textarea>
-          <p class="field-hint">Describe one small, reviewable change. Do not enter credentials or secrets.</p>
+          <div class="panel-heading"><div><p class="panel-kicker">01 / КОНТЕКСТ</p><h2>Карта и задача</h2></div><span class="status-pill" id="stateLabel">Черновик</span></div>
+          <section class="map-section">
+            <div class="map-heading"><label for="fileSearch">Карта проекта (реальные файлы репозитория)</label><span id="fileCount">…</span></div>
+            <input id="fileSearch" type="search" placeholder="Найти файл, например README" autocomplete="off" />
+            <ul class="project-map" id="projectMap"></ul>
+          </section>
+          <label for="taskInput">Цель задачи</label>
+          <textarea id="taskInput" rows="4" placeholder="Например: Добавить краткую инструкцию запуска в README.md.">Добавить в README.md короткий раздел с частыми проблемами при запуске.</textarea>
+          <label for="constraintsInput">Ограничения</label>
+          <input id="constraintsInput" type="text" placeholder="Например: менять только README.md; не трогать .env" value="Менять только README.md; не раскрывать секреты." />
+          <p class="field-hint">Опишите одну небольшую задачу и её границы. План формирует Claude на основе реальных файлов репозитория.</p>
           <p class="validation" id="validation" role="alert" aria-live="polite"></p>
-          <button class="button button-primary" id="planButton" type="button">Generate plan <span>→</span></button>
-
-          <div class="guardrail">
-            <span>◆</span>
-            <p><strong>Guardrail:</strong> a plan comes before any implementation. Approval is always explicit.</p>
-          </div>
+          <button class="button button-primary" id="planButton" type="button">Составить план <span>→</span></button>
         </article>
-
         <article class="panel output-panel" aria-live="polite">
-          <div class="panel-heading">
-            <div>
-              <p class="panel-kicker">02 / AGENT OUTPUT</p>
-              <h2 id="outputTitle">Waiting for task</h2>
-            </div>
-            <span class="mode-label">SIMULATED</span>
-          </div>
-
-          <div class="empty-state" id="emptyState">
-            <div class="empty-icon">✦</div>
-            <p>Enter a focused task, then generate a plan.</p>
-          </div>
-
+          <div class="panel-heading"><div><p class="panel-kicker">02 / РЕШЕНИЕ АГЕНТА</p><h2 id="outputTitle">Ожидание задачи</h2></div><span class="mode-label" id="modeLabel">LIVE</span></div>
+          <div class="empty-state" id="emptyState"><div class="empty-icon">✦</div><p>Выберите контекст и сформируйте план — его составит реальная модель Claude.</p></div>
           <div class="plan-content hidden" id="planContent">
-            <section class="output-section">
-              <p class="output-label">GOAL</p>
-              <p id="goalOutput"></p>
-            </section>
-            <section class="output-section two-column">
-              <div>
-                <p class="output-label">RELEVANT FILES</p>
-                <ul id="filesOutput"></ul>
-              </div>
-              <div>
-                <p class="output-label">VERIFICATION</p>
-                <p id="verificationOutput"></p>
-              </div>
-            </section>
-            <section class="output-section">
-              <p class="output-label">PROPOSED CHANGE</p>
-              <p id="changesOutput"></p>
-            </section>
+            <section class="output-section"><p class="output-label">ЦЕЛЬ</p><p id="goalOutput"></p></section>
+            <section class="output-section two-column"><div><p class="output-label">РЕЛЕВАНТНЫЕ ФАЙЛЫ</p><ul id="filesOutput"></ul></div><div><p class="output-label">ПРОВЕРКА</p><p id="verificationOutput"></p></div></section>
+            <section class="output-section"><p class="output-label">ОГРАНИЧЕНИЯ</p><p id="constraintsOutput"></p></section>
+            <section class="output-section"><p class="output-label">КРАТКИЙ ПЛАН</p><ol class="plan-list" id="changesOutput"></ol></section>
             <div class="safety-message" id="safetyMessage" hidden></div>
-            <div class="actions">
-              <button class="button button-quiet" id="newTaskButton" type="button">Start over</button>
-              <button class="button button-primary" id="approveButton" type="button">Approve plan <span>✓</span></button>
-            </div>
+            <div class="actions"><button class="button button-quiet" id="newTaskButton" type="button">Начать заново</button><button class="button button-primary" id="approveButton" type="button">Согласовать план <span>✓</span></button></div>
           </div>
-
           <div class="approved-content hidden" id="approvedContent">
-            <div class="approval-banner"><span>✓</span><div><strong>Plan approved</strong><p>The requested scope is now ready for implementation.</p></div></div>
-            <p class="approval-copy">In a real Codex task, this is where the agent would make only the approved changes and run the narrowest relevant check.</p>
-            <div class="actions">
-              <button class="button button-quiet" id="backToPlanButton" type="button">Review plan</button>
-              <button class="button button-primary" id="completeButton" type="button">Complete task <span>→</span></button>
+            <div class="approval-banner"><span>✓</span><div><strong>План согласован</strong><p>Теперь доступны правка одного файла из плана и проверки, связанные с этой задачей.</p></div></div>
+            <div id="targetFileWrap">
+              <label for="targetFileSelect">Файл для реальной правки (ИИ перепишет его содержимое)</label>
+              <select id="targetFileSelect"></select>
             </div>
-          </div>
-
-          <div class="report-content hidden" id="reportContent">
-            <div class="report-heading"><span class="check-mark">✓</span><div><p class="output-label">COMPLETED</p><h3>Verification report</h3></div></div>
-            <section class="output-section two-column">
-              <div><p class="output-label">CHANGED FILES</p><ul id="reportFiles"></ul></div>
-              <div><p class="output-label">CHECKS</p><p><span class="pass-dot"></span><strong>Passed</strong> — scope review and Markdown validation</p></div>
+            <p class="field-hint" id="noEditableHint" hidden>В плане нет файлов, которые агент может редактировать автоматически — отчёт будет сформирован без применения правки.</p>
+            <section class="checks-section"><p class="output-label">ВЫБЕРИТЕ ПОДХОДЯЩИЕ ПРОВЕРКИ</p>
+              <label class="check-option"><input type="checkbox" name="check" value="scope" checked /> Проверка области изменённых файлов</label>
+              <label class="check-option"><input type="checkbox" name="check" value="markdown" checked /> Проверка Markdown-форматирования</label>
+              <label class="check-option"><input type="checkbox" name="check" value="secrets" checked /> Проверка на секреты в изменениях</label>
             </section>
-            <section class="output-section"><p class="output-label">RESULT</p><p id="resultOutput"></p></section>
-            <section class="output-section"><p class="output-label">REMAINING RISK</p><p>The output is a local demonstration. A real Codex run is still required to edit files and execute project-specific checks.</p></section>
-            <div class="actions"><button class="button button-primary" id="resetButton" type="button">Try another task <span>↻</span></button></div>
+            <p class="validation" id="checkValidation" role="alert" aria-live="polite"></p>
+            <div class="actions"><button class="button button-quiet" id="backToPlanButton" type="button">Посмотреть план</button><button class="button button-primary" id="completeButton" type="button">Применить и завершить <span>→</span></button></div>
+          </div>
+          <div class="report-content hidden" id="reportContent">
+            <div class="report-heading"><span class="check-mark" id="reportMark">✓</span><div><p class="output-label">ЗАВЕРШЕНО</p><h3>Итоговый отчёт</h3></div></div>
+            <section class="output-section two-column"><div><p class="output-label">ИЗМЕНЁННЫЕ ФАЙЛЫ</p><ul id="reportFiles"></ul></div><div><p class="output-label">ПРОВЕРКИ</p><ul class="check-results" id="checkResults"></ul></div></section>
+            <section class="output-section"><p class="output-label">РЕЗУЛЬТАТ</p><p id="resultOutput"></p></section>
+            <section class="output-section" id="diffSection" hidden><p class="output-label">РЕАЛЬНЫЙ DIFF</p><pre class="diff-view" id="diffOutput"></pre></section>
+            <section class="output-section"><p class="output-label">ОСТАВШИЙСЯ РИСК</p><p id="riskOutput"></p></section>
+            <div class="actions"><button class="button button-primary" id="resetButton" type="button">Новая задача <span>↻</span></button></div>
           </div>
         </article>
       </section>
-
-      <footer><span>Built for a clear, safe hackathon demo.</span><span>Spec-driven • Approval-gated • Verifiable</span></footer>
+      <footer><span>Безопасно: план до изменений, проверки после согласования, изменения только в согласованных файлах.</span><span>Spec-driven • Approval-gated • Verifiable</span></footer>
     </main>
     <script src="assets/app.js"></script>
   </body>
