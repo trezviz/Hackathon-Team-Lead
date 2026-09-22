@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: hackathon-team-lead
+    runtime: python
+    plan: free
+    buildCommand: "true"
+    startCommand: "python server.py"
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

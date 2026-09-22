@@ -15,6 +15,8 @@ Configuration (env vars, or a local .env file — see .env.example):
     ANTHROPIC_MODEL     optional, defaults to claude-sonnet-5
     GEMINI_MODEL        optional, defaults to gemini-3.6-flash
     PORT                optional, defaults to 8000
+    HOST                optional, defaults to 127.0.0.1 (set to 0.0.0.0 in
+                         containers/cloud deploys so the port is reachable)
 """
 
 import json
@@ -499,9 +501,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    host = os.environ.get("HOST", "127.0.0.1")
     port = int(os.environ.get("PORT", "8000"))
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"Hackathon Tech Lead server running at http://127.0.0.1:{port}")
+    server = ThreadingHTTPServer((host, port), Handler)
+    print(f"Hackathon Tech Lead server running at http://{host}:{port}")
     provider = active_provider()
     print(f"AI provider: {provider or 'none configured'} (model: {active_model() or '-'})")
     try:

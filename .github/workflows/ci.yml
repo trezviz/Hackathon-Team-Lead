@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile check
+        run: python -m py_compile server.py
+
+      - name: Start server and hit health/files endpoints
+        run: |
+          python server.py &
+          SERVER_PID=$!
+          for i in $(seq 1 20); do
+            if curl -sf http://127.0.0.1:8000/api/health > /dev/null; then
+              break
+            fi
+            sleep 0.5
+          done
+          curl -sf http://127.0.0.1:8000/api/health
+          echo
+          curl -sf http://127.0.0.1:8000/api/files > /dev/null
+          curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/ | grep -q 200
+          kill "$SERVER_PID"

@@ -1,0 +1,11 @@
+.git
+.github
+.claude
+.specify
+__pycache__
+*.pyc
+.env
+.env.example
+docs
+specs
+README.md
